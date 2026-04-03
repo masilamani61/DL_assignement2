@@ -8,4 +8,4 @@ wandb/
 *.tar.gz
 data/images/
 data/annotations/
-*.egg-info/" > .gitignore
+*.egg-info/" > .gitignoredata.zip
