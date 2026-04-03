@@ -98,7 +98,10 @@ class OxfordIIITPetDataset(Dataset):
             return A.Compose([
                 A.Resize(self.image_size, self.image_size),
                 A.HorizontalFlip(p=0.5),
-                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, p=0.5),
+                A.RandomRotate90(p=0.3),
+                A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, p=0.5),
+                A.GaussianBlur(p=0.2),
+                A.GridDistortion(p=0.2),
                 A.Normalize(mean=(0.485, 0.456, 0.406),
                             std=(0.229, 0.224, 0.225)),
                 ToTensorV2(),
