@@ -76,13 +76,13 @@ def train_classifier(args):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-
+    best_acc = 0.0
     # Resume from previous checkpoint if exists
     if os.path.exists("checkpoints/classifier.pth"):
         checkpoint = torch.load("checkpoints/classifier.pth", map_location=device)
         model.load_state_dict(checkpoint["state_dict"])
         print(f"Resumed from checkpoint (best acc={checkpoint['best_metric']:.4f})")
-        best_acc = 0.0
+        best_acc = checkpoint['best_metric']
 
     for epoch in range(args.epochs):
         # --- Train ---
