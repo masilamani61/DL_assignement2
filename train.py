@@ -145,6 +145,7 @@ def train_classifier(args):
                 "best_metric": best_acc,
             }, "checkpoints/classifier.pth")
             print(f"  Saved best classifier (acc={best_acc:.4f})")
+            wandb.save("checkpoints/classifier.pth")
 
     wandb.finish()
     print(f"Classifier training done. Best val acc: {best_acc:.4f}")
@@ -233,6 +234,7 @@ def train_localizer(args):
                 "best_metric": best_iou,
             }, "checkpoints/localizer.pth")
             print(f"  Saved best localizer (iou={best_iou:.4f})")
+            wandb.save("checkpoints/localizer.pth")
 
     wandb.finish()
     print(f"Localizer training done. Best val IoU: {best_iou:.4f}")
@@ -321,6 +323,7 @@ def train_segmentation(args):
                 "best_metric": best_dice,
             }, "checkpoints/unet.pth")
             print(f"  Saved best segmentation (dice={best_dice:.4f})")
+            wandb.save("checkpoints/unet.pth")
 
     wandb.finish()
     print(f"Segmentation training done. Best val Dice: {best_dice:.4f}")
@@ -439,6 +442,7 @@ def train_multitask(args):
                 "best_metric": best_combined,
             }, "checkpoints/multitask.pth")
             print(f"  Saved best multitask model")
+            wandb.save("checkpoints/multitask.pth")
 
     wandb.finish()
     print("Multitask training done!")
