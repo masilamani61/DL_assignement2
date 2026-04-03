@@ -1,0 +1,11 @@
+# run this in your project folder
+echo "venv/
+__pycache__/
+*.pyc
+*.pth
+.env
+wandb/
+*.tar.gz
+data/images/
+data/annotations/
+*.egg-info/" > .gitignore
