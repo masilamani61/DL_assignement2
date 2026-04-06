@@ -16,14 +16,14 @@ class MultiTaskPerceptionModel(nn.Module):
     - Segmentation mask [B, seg_classes, H, W]
     """
 
-    def __init__(self, num_breeds: int = 37, seg_classes: int = 3, in_channels: int = 3):
+    def __init__(self, num_breeds: int = 37, seg_classes: int = 3, in_channels: int = 3, classifier_path: str = "classifier.pth", localizer_path: str = "localizer.pth", unet_path: str = "unet.pth"):
         super().__init__()
 
         # Shared encoder backbone
         self.encoder = VGG11Encoder(in_channels=in_channels)
         import gdown
-        gdown.download(id="https://drive.google.com/file/d/12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx/view?usp=sharing", output=classifier_path, quiet=False)
-        gdown.download(id="<localizer.pth drive id>", output=localizer_path, quiet=False)
+        gdown.download(id="https://drive.google.com/file/d/12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx/view?usp=sharing", output='', quiet=False)
+        gdown.download(id="https://drive.google.com/file/d/1wqL0HoYnYNfLSxZopt69c2D5HsPfMlZ1/view?usp=sharing", output=localizer_path, quiet=False)
         gdown.download(id="https://drive.google.com/file/d/1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc/view?usp=sharing", output=unet_path, quiet=False)
         # Bottleneck
         self.bottleneck = nn.Sequential(
