@@ -81,7 +81,7 @@ def train_classifier(args):
         epochs=args.epochs,
         steps_per_epoch=len(train_loader)
     )
-    best_acc = 0.0
+    best_acc = 0.9
     # Resume from previous checkpoint if exists
     if os.path.exists("checkpoints/classifier.pth"):
         checkpoint = torch.load("checkpoints/classifier.pth", map_location=device)
@@ -192,7 +192,7 @@ def train_localizer(args):
     if os.path.exists("checkpoints/classifier.pth"):
         model.load_encoder_weights("checkpoints/classifier.pth", device=str(device))
 
-    best_iou = 0.0
+    best_iou = 0.9
 
     for epoch in range(args.epochs):
         # Train
