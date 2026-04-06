@@ -21,11 +21,11 @@ class MultiTaskPerceptionModel(nn.Module):
 
         # Shared encoder backbone
         self.encoder = VGG11Encoder(in_channels=in_channels)
-        import gdown
-        gdown.download(id="12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx", output=classifier_path, quiet=False)
-        gdown.download(id="1wqL0HoYnYNfLSxZopt69c2D5HsPfMlZ1", output=localizer_path, quiet=False)
-        gdown.download(id="1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc", output=unet_path, quiet=False)
-        # Bottleneck
+        # import gdown
+        # gdown.download(id="12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx", output=classifier_path, quiet=False)
+        # gdown.download(id="1wqL0HoYnYNfLSxZopt69c2D5HsPfMlZ1", output=localizer_path, quiet=False)
+        # gdown.download(id="1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc", output=unet_path, quiet=False)
+        # # Bottleneck
         self.bottleneck = nn.Sequential(
             nn.Conv2d(512, 1024, kernel_size=3, padding=1),
             nn.BatchNorm2d(1024),
@@ -65,6 +65,9 @@ class MultiTaskPerceptionModel(nn.Module):
             nn.Linear(1024, 4),
             nn.Sigmoid(),
         )
+        self.classifier = torch.load(classifier_path, map_location=self.device)
+        self.localizer = torch.load(localizer_path, map_location=self.device)
+        self.segmenter = torch.load(unet_path, map_location=self.device)
 
         # --- Task 3: Segmentation Decoder ---
         self.dec5 = DecoderBlock(1024, 512, 512)
@@ -73,6 +76,36 @@ class MultiTaskPerceptionModel(nn.Module):
         self.dec2 = DecoderBlock(128,  128, 64)
         self.dec1 = DecoderBlock(64,   64,  32)
         self.seg_final = nn.Conv2d(32, seg_classes, kernel_size=1)
+        self._auto_load_weights()
+    def _auto_load_weights(self):
+        """Auto load weights from checkpoints folder if available."""
+        checkpoint_paths = [
+            "checkpoints",                    # local
+            "../checkpoints",                 # one level up
+            "../../checkpoints",              # two levels up
+        ]
+
+        # Find checkpoints folder
+        ckpt_dir = None
+        for path in checkpoint_paths:
+            if os.path.exists(path):
+                ckpt_dir = path
+                break
+
+        if ckpt_dir is None:
+            print("No checkpoints folder found - using random weights")
+            return
+
+        classifier_ckpt   = os.path.join(ckpt_dir, "classifier.pth")
+        localizer_ckpt    = os.path.join(ckpt_dir, "localizer.pth")
+        segmentation_ckpt = os.path.join(ckpt_dir, "unet.pth")
+
+        self.load_pretrained_weights(
+            classifier_ckpt   = classifier_ckpt   if os.path.exists(classifier_ckpt)   else None,
+            localizer_ckpt    = localizer_ckpt    if os.path.exists(localizer_ckpt)    else None,
+            segmentation_ckpt = segmentation_ckpt if os.path.exists(segmentation_ckpt) else None,
+            device            = "cpu"
+        )
 
     def forward(self, x: torch.Tensor):
         """Single forward pass for all 3 tasks.
@@ -102,13 +135,19 @@ class MultiTaskPerceptionModel(nn.Module):
         s = self.dec3(s, feats["s3"])           # [B, 128, 56, 56]
         s = self.dec2(s, feats["s2"])           # [B, 64,  112, 112]
         s = self.dec1(s, feats["s1"])           # [B, 32,  224, 224]
-        seg_out = self.seg_final(s)             # [B, 3,   224, 224]
+        seg_out = self.seg_final(s)   
+        with torch.no_grad():
+            cls_out = self.classifier(x)     # [B, 37]
+            loc_out = self.localizer(x)      # [B, 4]
+            seg_out = self.segmenter(x)      # [B, C, H, W]
 
         return {
             "classification": cls_out,
-            "localization":   loc_out,
-            "segmentation":   seg_out,
-        }
+            "localization": loc_out,
+            "segmentation": seg_out,
+        }          # [B, 3,   224, 224]
+
+        
 
     def load_pretrained_weights(self, 
                                  classifier_ckpt: str = None,

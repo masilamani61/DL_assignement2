@@ -67,7 +67,7 @@ def evaluate_on_test(data_dir, checkpoints_dir="checkpoints", device="cpu"):
     test_ds = OxfordIIITPetDataset(data_dir, split="test")
     test_loader = DataLoader(test_ds, batch_size=16, shuffle=False, num_workers=4)
     device = torch.device(device)
-
+    # Warm up GPU
     # ── Task 1: Classifier ──
     print("\nEvaluating Task 1: Classifier...")
     cls_model = load_classifier(
