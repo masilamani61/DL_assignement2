@@ -84,6 +84,7 @@ class MultiTaskPerceptionModel(nn.Module):
             - 'segmentation':   [B, seg_classes, H, W]
         """
         # Shared encoder
+        print(x)
         bottleneck, feats = self.encoder(x, return_features=True)
 
         # Bottleneck
