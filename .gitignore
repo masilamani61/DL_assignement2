@@ -10,3 +10,5 @@ data/images/
 data/annotations/
 *.egg-info/" > .gitignoredata.zip
 *.pth
+*.sh
+*.log
