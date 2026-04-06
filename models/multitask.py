@@ -21,7 +21,10 @@ class MultiTaskPerceptionModel(nn.Module):
 
         # Shared encoder backbone
         self.encoder = VGG11Encoder(in_channels=in_channels)
-
+        import gdown
+        gdown.download(id="https://drive.google.com/file/d/12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx/view?usp=sharing", output=classifier_path, quiet=False)
+        gdown.download(id="<localizer.pth drive id>", output=localizer_path, quiet=False)
+        gdown.download(id="https://drive.google.com/file/d/1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc/view?usp=sharing", output=unet_path, quiet=False)
         # Bottleneck
         self.bottleneck = nn.Sequential(
             nn.Conv2d(512, 1024, kernel_size=3, padding=1),
