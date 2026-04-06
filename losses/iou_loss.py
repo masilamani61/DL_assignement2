@@ -67,3 +67,17 @@ class IoULoss(nn.Module):
             return loss.sum()
         else:
             return loss
+class CombinedBoxLoss(nn.Module):
+    """Combined IoU + SmoothL1 loss for better bbox regression."""
+
+    def __init__(self, iou_weight=1.0, l1_weight=1.0):
+        super().__init__()
+        self.iou_loss = IoULoss()
+        self.l1_loss  = nn.SmoothL1Loss()
+        self.iou_weight = iou_weight
+        self.l1_weight  = l1_weight
+
+    def forward(self, pred_boxes, target_boxes):
+        iou = self.iou_loss(pred_boxes, target_boxes)
+        l1  = self.l1_loss(pred_boxes, target_boxes)
+        return self.iou_weight * iou + self.l1_weight * l1

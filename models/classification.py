@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-from .vgg11 import VGG11Encoder
+from .vgg11 import VGG11Encoder,VGG11EncoderNoBN
 from .layers import CustomDropout
 
 
@@ -42,3 +42,23 @@ class VGG11Classifier(nn.Module):
         features = self.encoder(x)       # [B, 512, 7, 7]
         logits = self.classifier(features)  # [B, 37]
         return logits
+class VGG11ClassifierNoBN(nn.Module):
+    """Classifier WITHOUT BatchNorm for comparison."""
+
+    def __init__(self, num_classes=37, in_channels=3, dropout_p=0.5):
+        super().__init__()
+        self.encoder = VGG11EncoderNoBN(in_channels=in_channels)
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((7, 7)),
+            nn.Flatten(),
+            nn.Linear(512 * 7 * 7, 4096),
+            nn.ReLU(inplace=True),
+            CustomDropout(p=dropout_p),
+            nn.Linear(4096, 4096),
+            nn.ReLU(inplace=True),
+            CustomDropout(p=dropout_p),
+            nn.Linear(4096, num_classes),
+        )
+
+    def forward(self, x):
+        return self.classifier(self.encoder(x))

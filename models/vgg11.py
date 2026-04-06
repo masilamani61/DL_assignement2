@@ -99,3 +99,55 @@ class VGG11Encoder(nn.Module):
             return x, features
 
         return x
+class VGG11EncoderNoBN(nn.Module):
+    """VGG11 encoder WITHOUT BatchNorm for comparison."""
+
+    def __init__(self, in_channels: int = 3):
+        super().__init__()
+
+        self.block1 = nn.Sequential(
+            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.block2 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.block3 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.block4 = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.block5 = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+        )
+        self.pool5 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x, return_features=False):
+        s1 = self.block1(x);  x = self.pool1(s1)
+        s2 = self.block2(x);  x = self.pool2(s2)
+        s3 = self.block3(x);  x = self.pool3(s3)
+        s4 = self.block4(x);  x = self.pool4(s4)
+        s5 = self.block5(x);  x = self.pool5(s5)
+
+        if return_features:
+            return x, {"s1": s1, "s2": s2, "s3": s3, "s4": s4, "s5": s5}
+        return x

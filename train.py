@@ -73,9 +73,14 @@ def train_classifier(args):
     val_loader   = DataLoader(val_ds,   batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     model     = VGG11Classifier(num_classes=37).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=args.lr,
+        epochs=args.epochs,
+        steps_per_epoch=len(train_loader)
+    )
     best_acc = 0.0
     # Resume from previous checkpoint if exists
     if os.path.exists("checkpoints/classifier.pth"):
@@ -98,7 +103,7 @@ def train_classifier(args):
             loss   = criterion(logits, labels)
             loss.backward()
             optimizer.step()
-
+            scheduler.step()
             train_loss += loss.item()
             correct    += (logits.argmax(1) == labels).sum().item()
             total      += labels.size(0)
@@ -161,24 +166,36 @@ def train_localizer(args):
 
     wandb.init(project=args.wandb_project, name="task2-localizer", config=vars(args))
 
-    train_ds = OxfordIIITPetDataset(args.data_dir, split="train")
-    val_ds   = OxfordIIITPetDataset(args.data_dir, split="val")
+    # Use bbox only dataset
+    from data.pets_dataset import OxfordIIITPetBBoxDataset
+    train_ds = OxfordIIITPetBBoxDataset(args.data_dir, split="train")
+    val_ds   = OxfordIIITPetBBoxDataset(args.data_dir, split="val")
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,  num_workers=4)
     val_loader   = DataLoader(val_ds,   batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    model     = VGG11Localizer(freeze_encoder=False).to(device)
-    criterion = IoULoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+    model = VGG11Localizer(freeze_encoder=False).to(device)
 
-    # Load pretrained encoder from classifier if exists
+    # Combined loss
+    from losses.iou_loss import CombinedBoxLoss
+    criterion = CombinedBoxLoss(iou_weight=1.0, l1_weight=1.0)
+
+    # Better optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=args.lr,
+        epochs=args.epochs,
+        steps_per_epoch=len(train_loader)
+    )
+
+    # Load pretrained encoder
     if os.path.exists("checkpoints/classifier.pth"):
         model.load_encoder_weights("checkpoints/classifier.pth", device=str(device))
 
     best_iou = 0.0
 
     for epoch in range(args.epochs):
-        # --- Train ---
+        # Train
         model.train()
         train_loss, train_iou = 0, 0
 
@@ -187,18 +204,19 @@ def train_localizer(args):
             bboxes = batch["bbox"].to(device)
 
             optimizer.zero_grad()
-            pred  = model(images)
-            loss  = criterion(pred, bboxes)
+            pred = model(images)
+            loss = criterion(pred, bboxes)
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
             train_loss += loss.item()
             train_iou  += compute_iou_score(pred.detach(), bboxes)
 
-        train_loss = train_loss / len(train_loader)
-        train_iou  = train_iou  / len(train_loader)
+        train_loss /= len(train_loader)
+        train_iou  /= len(train_loader)
 
-        # --- Validate ---
+        # Validate
         model.eval()
         val_loss, val_iou = 0, 0
 
@@ -211,10 +229,8 @@ def train_localizer(args):
                 val_loss += loss.item()
                 val_iou  += compute_iou_score(pred, bboxes)
 
-        val_loss = val_loss / len(val_loader)
-        val_iou  = val_iou  / len(val_loader)
-
-        scheduler.step()
+        val_loss /= len(val_loader)
+        val_iou  /= len(val_loader)
 
         print(f"Epoch {epoch+1}/{args.epochs} | "
               f"Train Loss: {train_loss:.4f} IoU: {train_iou:.4f} | "
@@ -228,18 +244,17 @@ def train_localizer(args):
 
         if val_iou > best_iou:
             best_iou = val_iou
+            os.makedirs("checkpoints", exist_ok=True)
             torch.save({
                 "state_dict": model.state_dict(),
                 "epoch": epoch + 1,
                 "best_metric": best_iou,
             }, "checkpoints/localizer.pth")
-            print(f"  Saved best localizer (iou={best_iou:.4f})")
             wandb.save("checkpoints/localizer.pth")
+            print(f"  Saved best localizer (iou={best_iou:.4f})")
 
     wandb.finish()
-    print(f"Localizer training done. Best val IoU: {best_iou:.4f}")
-
-
+    print(f"Localizer done. Best IoU: {best_iou:.4f}")
 # ─────────────────────────────────────────
 # Task 3: Train Segmentation
 # ─────────────────────────────────────────

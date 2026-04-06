@@ -5,58 +5,68 @@ import torch.nn as nn
 from .vgg11 import VGG11Encoder
 
 
+class SpatialAttention(nn.Module):
+    """Spatial attention to focus on relevant regions."""
+
+    def __init__(self, in_channels):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, 1, kernel_size=1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        attention = self.conv(x)
+        return x * attention
+
+
 class VGG11Localizer(nn.Module):
-    """VGG11-based bounding box regressor.
-    
-    Encoder outputs [B, 512, 7, 7] bottleneck.
-    Regression head predicts [xc, yc, w, h] normalized to [0, 1].
-    """
+    """VGG11-based bounding box regressor with attention."""
 
     def __init__(self, in_channels: int = 3, freeze_encoder: bool = False):
         super().__init__()
 
         self.encoder = VGG11Encoder(in_channels=in_channels)
 
-        # Optionally freeze encoder weights
         if freeze_encoder:
             for param in self.encoder.parameters():
                 param.requires_grad = False
 
-        # Regression head
+        # Spatial attention
+        self.attention = SpatialAttention(512)
+
+        # Better regression head
         self.regressor = nn.Sequential(
-            nn.AdaptiveAvgPool2d((7, 7)),       # [B, 512, 7, 7]
-            nn.Flatten(),                        # [B, 25088]
+            nn.AdaptiveAvgPool2d((7, 7)),
+            nn.Flatten(),
 
             nn.Linear(512 * 7 * 7, 4096),
             nn.BatchNorm1d(4096),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.4),
 
             nn.Linear(4096, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.4),
 
-            nn.Linear(1024, 4),                 # [B, 4]
-            nn.Sigmoid(),                        # normalize output to [0, 1]
+            nn.Linear(1024, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(256, 4),
+            nn.Sigmoid()
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass.
-
-        Returns:
-            Bounding box [B, 4] in (xc, yc, w, h) format, values in [0, 1]
-        """
         features = self.encoder(x)          # [B, 512, 7, 7]
+        features = self.attention(features) # apply attention
         bbox = self.regressor(features)     # [B, 4]
         return bbox
 
     def load_encoder_weights(self, classifier_checkpoint: str, device: str = "cpu"):
-        """Load encoder weights from a trained classifier checkpoint."""
         checkpoint = torch.load(classifier_checkpoint, map_location=device)
         state_dict = checkpoint.get("state_dict", checkpoint)
-
-        # Extract only encoder weights
         encoder_state = {
             k.replace("encoder.", ""): v
             for k, v in state_dict.items()
