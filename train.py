@@ -81,7 +81,7 @@ def train_classifier(args):
         epochs=args.epochs,
         steps_per_epoch=len(train_loader)
     )
-    best_acc = 0.9
+    best_acc = 0
     # Resume from previous checkpoint if exists
     if os.path.exists("checkpoints/classifier.pth"):
         checkpoint = torch.load("checkpoints/classifier.pth", map_location=device)
@@ -187,12 +187,22 @@ def train_localizer(args):
         epochs=args.epochs,
         steps_per_epoch=len(train_loader)
     )
+    
+    best_iou = 0.0
 
     # Load pretrained encoder
     if os.path.exists("checkpoints/classifier.pth"):
         model.load_encoder_weights("checkpoints/classifier.pth", device=str(device))
+        print("Loaded encoder weights from classifier checkpoint")
 
-    best_iou = 0.9
+    # Resume from previous localizer checkpoint
+    if os.path.exists("checkpoints/localizer.pth"):
+        ckpt = torch.load("checkpoints/localizer.pth", map_location=device)
+        model.load_state_dict(ckpt.get("state_dict", ckpt))
+        best_iou = ckpt.get("best_metric", 0.0)
+        print(f"Resumed localizer from checkpoint (iou={best_iou:.4f})")
+
+    
 
     for epoch in range(args.epochs):
         # Train

@@ -60,7 +60,8 @@ class VGG11Localizer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.encoder(x)          # [B, 512, 7, 7]
-        features = self.attention(features) # apply attention
+        
+        #features = self.attention(features) # apply attention
         bbox = self.regressor(features)     # [B, 4]
         return bbox
 
