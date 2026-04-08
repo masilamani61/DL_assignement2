@@ -59,12 +59,14 @@ class VGG11Localizer(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        features = self.encoder(x)          # [B, 512, 7, 7]
-        
-        #features = self.attention(features) # apply attention
-        bbox = self.regressor(features)     # [B, 4]
-        return bbox
+        B, C, H, W = x.shape
 
+        features = self.encoder(x)
+        bbox = self.regressor(features)
+
+        scale = torch.tensor([W, H, W, H], device=bbox.device)
+        bbox = bbox * scale
+        return bbox
     def load_encoder_weights(self, classifier_checkpoint: str, device: str = "cpu"):
         checkpoint = torch.load(classifier_checkpoint, map_location=device)
         state_dict = checkpoint.get("state_dict", checkpoint)
