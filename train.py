@@ -214,7 +214,7 @@ def train_localizer(args):
             bboxes = batch["bbox"].to(device)
             
             # Scale GT to pixel space to match model output
-            bboxes = bboxes * 224
+            
 
             optimizer.zero_grad()
             pred = model(images)
@@ -235,8 +235,7 @@ def train_localizer(args):
                 images = batch["image"].to(device)
                 bboxes = batch["bbox"].to(device)
                 
-                # Scale GT to pixel space
-                bboxes = bboxes * 224
+                # Scale GT to pixel spa
                 
                 pred     = model(images)
                 loss     = criterion(pred, bboxes)

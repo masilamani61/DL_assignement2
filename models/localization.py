@@ -64,10 +64,7 @@ class VGG11Localizer(nn.Module):
         bbox = self.regressor(features)     # [B, 4] normalized 0-1
         
         # Always convert to pixel space for output
-        # Autograder expects pixel coordinates in 224x224 image space
-        scale = torch.tensor([224, 224, 224, 224], 
-                            device=bbox.device, dtype=bbox.dtype)
-        bbox = bbox * scale
+        
         return bbox
     def load_encoder_weights(self, classifier_checkpoint: str, device: str = "cpu"):
         checkpoint = torch.load(classifier_checkpoint, map_location=device)
