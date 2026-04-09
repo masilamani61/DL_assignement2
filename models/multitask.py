@@ -10,7 +10,6 @@ from .classification import VGG11Classifier
 from .localization import VGG11Localizer
 from .segmentation import VGG11UNet
 
-
 class MultiTaskPerceptionModel(nn.Module):
     """Unified multi-task model.
     
@@ -30,7 +29,7 @@ class MultiTaskPerceptionModel(nn.Module):
             gdown.download(id="12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx",
                           output=classifier_path, quiet=False)
         if not os.path.exists(localizer_path):
-            gdown.download(id="136u73r9rQIZ0MqeuL6G0DMk4dgCu0pgJ",
+            gdown.download(id="1YIzPiHvMgF2Wk4vv2NeBwVgah7A19Hqw",
                           output=localizer_path, quiet=False)
         if not os.path.exists(unet_path):
             gdown.download(id="1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc",
