@@ -212,6 +212,9 @@ def train_localizer(args):
         for batch in train_loader:
             images = batch["image"].to(device)
             bboxes = batch["bbox"].to(device)
+            
+            # Scale GT to pixel space to match model output
+            bboxes = bboxes * 224
 
             optimizer.zero_grad()
             pred = model(images)
@@ -223,9 +226,6 @@ def train_localizer(args):
             train_loss += loss.item()
             train_iou  += compute_iou_score(pred.detach(), bboxes)
 
-        train_loss /= len(train_loader)
-        train_iou  /= len(train_loader)
-
         # Validate
         model.eval()
         val_loss, val_iou = 0, 0
@@ -234,8 +234,12 @@ def train_localizer(args):
             for batch in val_loader:
                 images = batch["image"].to(device)
                 bboxes = batch["bbox"].to(device)
-                pred   = model(images)
-                loss   = criterion(pred, bboxes)
+                
+                # Scale GT to pixel space
+                bboxes = bboxes * 224
+                
+                pred     = model(images)
+                loss     = criterion(pred, bboxes)
                 val_loss += loss.item()
                 val_iou  += compute_iou_score(pred, bboxes)
 
