@@ -71,6 +71,7 @@ class MultiTaskPerceptionModel(nn.Module):
         """
         cls_out = self.classifier(x)    # [B, 37]
         loc_out = self.localizer(x) *224    # [B, 4]
+        print(loc_out)
         seg_out = self.segmenter(x)     # [B, 3, 224, 224]
 
         return {
