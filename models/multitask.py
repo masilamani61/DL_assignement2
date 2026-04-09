@@ -17,7 +17,6 @@ class MultiTaskPerceptionModel(nn.Module):
     Uses 3 individually trained models for each task.
     Single forward pass yields all 3 outputs.
     """
-
     def __init__(self, num_breeds: int = 37, seg_classes: int = 3, in_channels: int = 3,
                  classifier_path: str = "checkpoints/classifier.pth",
                  localizer_path: str = "checkpoints/localizer.pth",
@@ -31,7 +30,7 @@ class MultiTaskPerceptionModel(nn.Module):
             gdown.download(id="12jZS3yhMiiEVdmFT4vfL6tU5nZT4mqdx",
                           output=classifier_path, quiet=False)
         if not os.path.exists(localizer_path):
-            gdown.download(id="1wqL0HoYnYNfLSxZopt69c2D5HsPfMlZ1",
+            gdown.download(id="136u73r9rQIZ0MqeuL6G0DMk4dgCu0pgJ",
                           output=localizer_path, quiet=False)
         if not os.path.exists(unet_path):
             gdown.download(id="1XLSGHdySbVP2zZLhfrs0TzCbC53VklJc",

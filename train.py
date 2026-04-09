@@ -20,7 +20,11 @@ from losses.iou_loss import IoULoss
 # ─────────────────────────────────────────
 
 def compute_iou_score(pred_boxes, target_boxes, eps=1e-6):
-    """Compute mean IoU between predicted and target boxes."""
+    # Normalize to 0-1 if in pixel space
+    if pred_boxes.max() > 1.0:
+        pred_boxes   = pred_boxes   / 224
+        target_boxes = target_boxes / 224
+
     pred_x1 = pred_boxes[:, 0] - pred_boxes[:, 2] / 2
     pred_y1 = pred_boxes[:, 1] - pred_boxes[:, 3] / 2
     pred_x2 = pred_boxes[:, 0] + pred_boxes[:, 2] / 2
@@ -31,12 +35,8 @@ def compute_iou_score(pred_boxes, target_boxes, eps=1e-6):
     tgt_x2 = target_boxes[:, 0] + target_boxes[:, 2] / 2
     tgt_y2 = target_boxes[:, 1] + target_boxes[:, 3] / 2
 
-    inter_x1 = torch.max(pred_x1, tgt_x1)
-    inter_y1 = torch.max(pred_y1, tgt_y1)
-    inter_x2 = torch.min(pred_x2, tgt_x2)
-    inter_y2 = torch.min(pred_y2, tgt_y2)
-
-    inter_area = (inter_x2 - inter_x1).clamp(0) * (inter_y2 - inter_y1).clamp(0)
+    inter_area = (torch.min(pred_x2, tgt_x2) - torch.max(pred_x1, tgt_x1)).clamp(0) * \
+                 (torch.min(pred_y2, tgt_y2) - torch.max(pred_y1, tgt_y1)).clamp(0)
     pred_area  = (pred_x2 - pred_x1).clamp(0) * (pred_y2 - pred_y1).clamp(0)
     tgt_area   = (tgt_x2 - tgt_x1).clamp(0)  * (tgt_y2 - tgt_y1).clamp(0)
     union_area = pred_area + tgt_area - inter_area + eps
@@ -211,7 +211,7 @@ def train_localizer(args):
 
         for batch in train_loader:
             images = batch["image"].to(device)
-            bboxes = batch["bbox"].to(device)
+            bboxes = batch["bbox"].to(device)*224
             
             # Scale GT to pixel space to match model output
             
@@ -225,7 +225,8 @@ def train_localizer(args):
 
             train_loss += loss.item()
             train_iou  += compute_iou_score(pred.detach(), bboxes)
-
+        train_loss= train_loss / len(train_loader)  
+        train_iou = train_iou / len(train_loader)
         # Validate
         model.eval()
         val_loss, val_iou = 0, 0
@@ -233,7 +234,7 @@ def train_localizer(args):
         with torch.no_grad():
             for batch in val_loader:
                 images = batch["image"].to(device)
-                bboxes = batch["bbox"].to(device)
+                bboxes = batch["bbox"].to(device)*224
                 
                 # Scale GT to pixel spa
                 

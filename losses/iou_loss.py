@@ -78,6 +78,10 @@ class CombinedBoxLoss(nn.Module):
         self.l1_weight  = l1_weight
 
     def forward(self, pred_boxes, target_boxes):
-        iou = self.iou_loss(pred_boxes, target_boxes)
-        l1  = self.l1_loss(pred_boxes, target_boxes)
+        # Normalize to 0-1 for IoU loss
+        pred_norm   = pred_boxes   / 224
+        target_norm = target_boxes / 224
+
+        iou = self.iou_loss(pred_norm, target_norm)
+        l1  = self.l1_loss(pred_norm, target_norm)
         return self.iou_weight * iou + self.l1_weight * l1

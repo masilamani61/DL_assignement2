@@ -61,7 +61,7 @@ class VGG11Localizer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.encoder(x)
         features = self.attention(features)
-        bbox = self.regressor(features)     # [B, 4] normalized 0-1
+        bbox = self.regressor(features)   *224  # [B, 4] normalized 0-1
         
         # Always convert to pixel space for output
         
