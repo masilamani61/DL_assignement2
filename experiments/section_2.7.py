@@ -39,30 +39,22 @@ WILD_IMAGES = [
 ]
 
 
-def download_wild_images(save_dir="wild_images"):
-    """Download wild images from internet."""
-    os.makedirs(save_dir, exist_ok=True)
-    downloaded = []
+import os
 
-    for img_info in WILD_IMAGES:
-        save_path = os.path.join(save_dir, img_info["name"])
-        if not os.path.exists(save_path):
-            print(f"Downloading {img_info['name']}...")
-            try:
-                urllib.request.urlretrieve(img_info["url"], save_path)
-                print(f"  Saved to {save_path}")
-            except Exception as e:
-                print(f"  Failed: {e}")
-                continue
-        else:
-            print(f"  Already exists: {save_path}")
+def load_all_images(save_dir="wild_images"):
+    """Load all images from folder automatically."""
+    loaded = []
 
-        downloaded.append({
-            "path": save_path,
-            "description": img_info["description"]
-        })
+    for file_name in os.listdir(save_dir):
+        file_path = os.path.join(save_dir, file_name)
 
-    return downloaded
+        if file_name.lower().endswith((".jpg", ".jpeg", ".png")):
+            loaded.append({
+                "path": file_path,
+                "description": file_name
+            })
+
+    return loaded
 
 
 def run_full_pipeline(image_path, classifier, localizer,
@@ -250,20 +242,21 @@ def run_experiment(checkpoints_dir="checkpoints",
 
     # ── Download wild images ──
     print("Downloading wild images...")
-    wild_images = download_wild_images(wild_images_dir)
+    wild_images = load_all_images(wild_images_dir)
 
-    if not wild_images:
-        print("No wild images found! Please add images manually to wild_images/")
-        return
+    # if not wild_images:
+    #     print("No wild images found! Please add images manually to wild_images/")
+    #     return
 
     # ── W&B Table ──
     table = wandb.Table(columns=[
         "Image", "Pipeline Output", "Predicted Class",
         "Confidence", "Analysis"
     ])
-
+    print(wild_images)
     # ── Run pipeline on each wild image ──
     for i, img_info in enumerate(wild_images):
+
         print(f"\nProcessing: {img_info['description']}")
 
         try:

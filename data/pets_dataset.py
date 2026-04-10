@@ -174,3 +174,8 @@ class OxfordIIITPetBBoxDataset(OxfordIIITPetDataset):
     def __init__(self, root_dir, split="train", transform=None, image_size=224):
         super().__init__(root_dir, split, transform, image_size)
         # Filter only images with real bbox annotations
+        self.samples = [
+            s for s in self.samples
+            if os.path.exists(os.path.join(self.bboxes_dir, s[0] + ".xml"))
+        ]
+        print(f"BBox dataset split={split}: {len(self.samples)} images with real annotations")

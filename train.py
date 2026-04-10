@@ -211,7 +211,7 @@ def train_localizer(args):
 
         for batch in train_loader:
             images = batch["image"].to(device)
-            bboxes = batch["bbox"].to(device)*224
+            bboxes = batch["bbox"].to(device)
             
             # Scale GT to pixel space to match model output
             
@@ -234,7 +234,7 @@ def train_localizer(args):
         with torch.no_grad():
             for batch in val_loader:
                 images = batch["image"].to(device)
-                bboxes = batch["bbox"].to(device)*224
+                bboxes = batch["bbox"].to(device)
                 
                 # Scale GT to pixel spa
                 

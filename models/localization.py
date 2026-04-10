@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 from .vgg11 import VGG11Encoder
-
+from .layers import CustomDropout
 
 class SpatialAttention(nn.Module):
     """Spatial attention to focus on relevant regions."""
@@ -43,12 +43,12 @@ class VGG11Localizer(nn.Module):
             nn.Linear(512 * 7 * 7, 4096),
             nn.BatchNorm1d(4096),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.4),
+            CustomDropout(p=0.4),
 
             nn.Linear(4096, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.4),
+            CustomDropout(p=0.1),
 
             nn.Linear(1024, 256),
             nn.BatchNorm1d(256),
